@@ -1,6 +1,6 @@
 
 :: Compute structural metrics
-lascanopy -i %f_dir%\las\02_norm\*.laz ^
+lascanopy -i %f_dir%\20_las\02_norm\*.laz ^
 	-use_tile_bb ^
 	-drop_class 2 7 ^
 	-drop_z_above 100 ^
@@ -15,6 +15,6 @@ lascanopy -i %f_dir%\las\02_norm\*.laz ^
 	-cov ^
 	-kur ^
 	-ske ^
-	-odir %f_dir%\metrics\by_tile ^
+	-odir %f_dir%\50_metrics\by_tile ^
 	-obil ^
 	-cores %cores%

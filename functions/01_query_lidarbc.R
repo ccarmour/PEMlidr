@@ -15,10 +15,10 @@ query_lidarbc <- function(aoi,
   
   # Extract intersecting polygons of aoi and LidarBC index
   if(keep.geometry == TRUE){
-    aoi.index <- sf::st_intersection(index, aoi) %>% st_cast("POLYGON")
-    st_write(aoi.index, dsn = str_c(data.path, "/aoi.index.gpkg"), append = FALSE)
+    aoi.index <- sf::st_intersection(index, aoi) %>% sf::st_cast("POLYGON")
+    sf::st_write(aoi.index, dsn = stringr::str_c(data.path, "/aoi.index.gpkg"), append = FALSE)
   } else {
-    aoi.index <- sf::st_intersection(index, aoi) %>% st_drop_geometry()
+    aoi.index <- sf::st_intersection(index, aoi) %>% sf::st_drop_geometry()
   }
   
   # Add projection info
@@ -28,17 +28,24 @@ query_lidarbc <- function(aoi,
   
   # Define file destination
   aoi.index <- aoi.index %>%
-    rename(file.orig = s3Url) %>%
-    mutate(file.dest = file.path(str_c(data.path,  'las'), basename(file.orig))) %>%
-    relocate(file.dest , .after = file.orig)
+    dplyr::rename(file.orig = s3Url) %>%
+    dplyr::mutate(file.dest = file.path(stringr::str_c(data.path,  '20_las'), basename(file.orig))) %>%
+    dplyr::relocate(file.dest , .after = file.orig)
   
-  print(str_c('There are ', nrow(aoi.index), ' lidar point cloud tiles that can be downloaded from LidarBC'))
+  
+  if(nrow(aoi.index) >= 1){
+    print(stringr::str_c('There are ', nrow(aoi.index), ' lidar point cloud tiles that can be downloaded from LidarBC'))
+  }
+
+  if(nrow(aoi.index) < 1){
+    print(stringr::str_c("There are no lidar point cloud tiles available on the LidarBC portal. User will need to provide lidar data. The raw tiles should be placed in the '", stringr::str_c(data.path,  '20_las'), "' folder in .laz or .las format."))
+  }
   
   # Write to the data folder
   if(keep.geometry == TRUE){
-    st_write(aoi.index, str_c(data.path, "aoi_index.gpkg"), append = FALSE)
+    sf::st_write(aoi.index, stringr::str_c(data.path, "aoi_index.gpkg"), append = FALSE)
   } else {
-    write.csv2(aoi.index, str_c(data.path, "aoi_index.csv"), append = FALSE)
+    write.csv2(aoi.index, stringr::str_c(data.path, "aoi_index.csv"), append = FALSE)
   }
 
 }

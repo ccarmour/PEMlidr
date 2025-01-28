@@ -1,0 +1,52 @@
+---
+title: "Index Creation"
+author: "C Armour"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+require(sf)
+require(tidyverse)
+require(pbapply)
+require(future)
+require(parallel)
+require(arcgisbinding)
+require(lidR)
+require(future)
+require(terra)
+require(magrittr)
+
+terra::terraOptions(overwrite = T, todisk = T, tempdir = "E:/temp")
+
+## Write simple function to source all other functions so we can refresh with a simple function call
+source_functions <- function(){
+  list.files(str_c(getwd(), "/functions"), pattern = ".R$", full.names = T) %>% lapply(source)
+}
+
+source_functions()
+```
+
+At least once every six months, the index of available LiDAR files should be re-downloaded from the portal. The code chunk below will check the date of the most recent index and download a newer version if applicable and an ArcGIS license is available. It returns the file path of the relevant geopackage after this operation.
+
+If you need to update manually for some reason, the instructions to do
+this are as follows:
+
+1.  Navigate to LidarBC Map Grid
+    <https://governmentofbc.maps.arcgis.com/home/item.html?id=5f6a1f31212a4cb2826743d2e52ef02a>
+2.  Select `Open in ArcGIS Desktop` -\> `Open in ArcGIS Pro`
+3.   Double click `item.pitemx` file to open in ArcGIS. This is also
+    stored in the `las_index_files` folder.
+4.  Download point cloud index layer (eg
+    `Point Cloud Index - 1:2,500 Grid`)
+5.  Use "`Export Features`" tool and save to the `las_index_files`
+    folder using the following format: "`las_index_YYYY-MM-DD.shp`"
+6.  Read this shapefile in as your index. Optional: export as `.gpkg`.
+
+```{r get-lidar-layers}
+
+## Pull the AOI index
+index <- make_gpkg_index() %>% st_read()
+
+```

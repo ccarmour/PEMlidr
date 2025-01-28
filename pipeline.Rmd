@@ -16,7 +16,7 @@ require(tidyverse)
 require(pbapply)
 require(future)
 require(parallel)
-require(arcgisbinding)
+# require(arcgisbinding)
 require(lidR)
 require(future)
 require(terra)
@@ -39,7 +39,7 @@ The `data` folder in the top branch will contain all your downloaded ALS data an
 ```{r setup-folder-structure, include = FALSE}
 
 # Set up your data path
-data.path <- str_c("D:/Kitimat_LiDAR/data/")
+data.path <- str_c("D:/test_aoi_kit/kitimat/00_raw_inputs/20_lidar/")
 # Set up the folders
 setup_folders(data.path)
 
@@ -55,30 +55,16 @@ The `AOI` folder in the top branch will need to contain your area of interest, s
 # rm(kmz.path)
 
 # Otherwise, read in your AOI
-aoi <- sf::st_read("D:/Kitimat_LiDAR/AOI/AOI.gpkg")
+aoi <- sf::st_read("D:/test_aoi_kit/AOI.gpkg")
 
 ```
 
-At least once every six months, the index of available LiDAR files should be re-downloaded from the portal. The code chunk below will check the date of the most recent index and download a newer version if applicable and an ArcGIS license is available. It returns the file path of the relevant geopackage after this operation.
-
-If you need to update manually for some reason, the instructions to do
-this are as follows:
-
-1.  Navigate to LidarBC Map Grid
-    <https://governmentofbc.maps.arcgis.com/home/item.html?id=5f6a1f31212a4cb2826743d2e52ef02a>
-2.  Select `Open in ArcGIS Desktop` -\> `Open in ArcGIS Pro`
-3.   Double click `item.pitemx` file to open in ArcGIS. This is also
-    stored in the `las_index_files` folder.
-4.  Download point cloud index layer (eg
-    `Point Cloud Index - 1:2,500 Grid`)
-5.  Use "`Export Features`" tool and save to the `las_index_files`
-    folder using the following format: "`las_index_YYYY-MM-DD.shp`"
-6.  Read this shapefile in as your index. Optional: export as `.gpkg`.
+Import the latest index file (contained in the package documentation), which contains the 
 
 ```{r get-lidar-layers}
 
 ## Pull the AOI index
-index <- make_gpkg_index() %>% st_read()
+index <- sf::st_read("las_index_files/las_index_2024-04-09.gpkg")
 
 ```
 
@@ -94,10 +80,11 @@ query_lidarbc(data.path = data.path, aoi = aoi, index = index)
 download_lidarbc(data.path = data.path, cores = 6L)
 
 ```
+OPTION 1: Process with LAStools
 
-We use the LAStools software to retile and normalize the data because it is the fastest and most efficient. The `setup_retile_file` and `setup_norm_file` functions create and execute a batch file from a series of LAStools templates to accomplish this. The `setup_DEM_file` and `setup_CHM_file` functions set up and execute batch files for creating DEM and CHM files. These surface models are computed for each tile at a 1m resolution and output as a raster; these rasters are then merged into one .tif file across the AOI at aggregate resolutions inputted by the user. Each function takes an integer vector of grid cell sizes in the `res` argument. The defaults are for 5m, 10m, and 20m rasters over the AOI. As before, the core argument can be specified for parallel processing, defaulting to 6.
+We can use the LAStools software to retile and normalize the data because it is the fastest and most efficient. The `setup_retile_file` and `setup_norm_file` functions create and execute a batch file from a series of LAStools templates to accomplish this. The `setup_DEM_file` and `setup_CHM_file` functions set up and execute batch files for creating DEM and CHM files. These surface models are computed for each tile at a 1m resolution and output as a raster; these rasters are then merged into one .tif file across the AOI at aggregate resolutions inputted by the user. Each function takes an integer vector of grid cell sizes in the `res` argument. The defaults are for 5m, 10m, and 20m rasters over the AOI. As before, the core argument can be specified for parallel processing, defaulting to 6.
 
-```{r}
+```{r lastools-option}
 
 # Create and execute retile of point clouds
 setup_retile_file(data.path = data.path, cores = 12L) %>% shell.exec()
@@ -108,5 +95,13 @@ setup_DEM_file(data.path = data.path, cores = 3L) %>% shell.exec()
 # Create and exectue CHM layer creation
 setup_CHM_file(data.path = data.path, cores = 12L) %>% shell.exec()
 
+```
 
+OPTION 2: Process with lidR package
+
+```{r lidR-option}
+retile_las_files(data.path = data.path)
+normalize_las_files(data.path = data.path)
+create_DEM(data.path = data.path)
+create_CHM(data.path = data.path)
 ```
